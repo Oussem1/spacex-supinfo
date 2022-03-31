@@ -10,7 +10,7 @@ const App = () => {
   return (
     <Routes>
         <Route path='*' element={<FourOFourError/>}/>
-        <Route path='/index' element={<Home/>}/>
+        <Route path='/' element={<Home/>}/>
         <Route path='/launches' element={<Launches/>}/>
         <Route path='/launch/:id' element={<LaunchInfo/>}/>
     </Routes>

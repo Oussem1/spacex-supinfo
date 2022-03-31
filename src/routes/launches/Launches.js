@@ -1,76 +1,90 @@
 import React, { useEffect, useState } from 'react'
-// import FooterManagement from './FooterManagement'
-import Launch from '../../components/launch-card/Launch'
+import { getAllLaunches } from '../../api/getAPI'
 import Nav from '../../components/navbar/Nav'
-import { getLaunchesPage, getAllLaunches } from '../../api/getAPI.js'
-// import SearchBox from './components/search-box/search-box';
-import SearchBox from '../../components/search-box/search-box'
+import { Table, Input, Button, Layout } from 'antd'
+import { SearchOutlined } from '@ant-design/icons';
+import moment from "moment";
+import 'antd/dist/antd.css'
+import { Link } from 'react-router-dom'
 
+const { Header, Footer, Content } = Layout
 const Launches = () => {
   const [launches, setLaunches] = useState([])
   const [loading, setLoading] = useState(false)
-  const [searchField, setSearchField] = useState('')
-  const [filteredLaunches,setFilteredLaunches] = useState(launches)
-  const [offset, setOffset] = useState(0)
-  // const [pageNumber, setPageNumber] = useState(0)
-  const [allPages, setAllPages] = useState(0)
-
-  const launchesPerPage = 10
-  // const indexOfLastLaunch  = pageNumber * launchesPerPage
 
   useEffect(() => {
-    const getAll = async() => {
+    const getAll = async () => {
       setLoading(true)
-      const res = await getLaunchesPage(offset, launchesPerPage)
-      setLaunches(res)
+      const data = await getAllLaunches()
+      setLaunches(data)
       setLoading(false)
     }
     getAll()
-  }, [offset])
+  }, [])
 
-  useEffect(() => {
-    const newFilteredLaunches = launches.filter((launch) => launch.mission_name.toLocaleLowerCase().includes(searchField))
-    setFilteredLaunches(newFilteredLaunches)
-  }, [launches, searchField])
+  const columns = [
 
-  // useEffect(() => {
-  //   const getAll = async() => {
-  //     const res = await fetch('https://api.spacex.land/rest/launches/')
-  //     const data = await res.json()
-  //     const total = await data.length
-  //     setAllPages(total)
-  //   }
-  //   getAll()
-  // }, [])
-
-  // useEffect(() => {
-  //   setLoading(true)
-  //   getLaunchesPage(offset, launchesPerPage).then(res => setLaunches(res))
-  //   setLoading(false)
-  // }, [offset])
-
-  console.log( launches)
-  //const filterdLaunches = launches.filter((launches) => launches.mission_name.toLocaleLowerCase().includes(searchField))
-
-  const onSearchChange = (event) => {
-    const searchFieldString = event.target.value.toLocaleLowerCase();
-    setSearchField(searchFieldString);
-  };
+    {
+      title: 'Mission Name',
+      dataIndex: 'mission_name',
+      width: '20%',
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => {
+        return (
+          <>
+            <Input
+              autoFocus
+              placeholder='Search by mission name'
+              value={selectedKeys}
+              onChange={(e) => { setSelectedKeys(e.target.value ? [e.target.value] : []); confirm({ closeDropdown: false }) }}
+              onPressEnter={() => confirm()}
+              onBlur={() => confirm()}
+            />
+            <Button onClick={() => confirm()} type='primary'>Search</Button>
+            <Button onClick={() => clearFilters()} type='danger'>Reset</Button>
+          </>
+        )
+      },
+      filterIcon: () => <SearchOutlined />,
+      onFilter: (value, record) => record.mission_name.toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.mission_name.length - b.mission_name.length
+    },
+    {
+      title: 'Launch Date',
+      dataIndex: 'launch_date_utc',
+      width: '15%',
+      sorter: (a, b) => new Date(b.date) - new Date(a.date),
+      render: cts => <p>{moment(cts).format('MMMM do YYYY [at] HH:mm [UTC]')}</p>
+    },
+    {
+      title: 'Details',
+      dataIndex: 'details',
+      width: '50%',
+    },
+    {
+      title: 'More',
+      dataIndex: 'id',
+      width: '15%',
+      render: launch => <Link to={`/launch/${launch}`}><Button>View Details</Button></Link>
+    }
+  ]
 
   return (
-    <div>
+    <Layout>
+      <Header>
+        <Nav />
+      </Header>
 
-      <Nav />
-      <SearchBox onChangeHandler={onSearchChange} placeHolder={'search launches'} className={'search-box'} />
-      {
-        (!loading) ? (
-          filteredLaunches.map((launch) => <Launch key={launch.mission_name} launch={launch} />)
-        ) : (
-          <p>Loading...</p>
-        )
-      }
-      {/* <FooterManagement/> */}
-    </div>
+      <Content>
+        <Table
+          loading={loading}
+          dataSource={launches}
+          columns={columns}
+          rowKey={launches.launch_date_unix}
+        />
+
+      </Content>
+      <Footer>Supinfo 2022</Footer>
+    </Layout>
   )
 }
 
